@@ -1,0 +1,68 @@
+version: 2.1
+
+description: |
+  Deploy using Kubr:
+  https://github.com/t3n/circleci-orbs
+
+executors:
+  ssh-client:
+    description: The docker container to use when running docker-image commands
+    docker:
+      - image: quay.io/t3n/ssh-client
+commands:
+  deploy:
+    parameters:
+      api-key:
+        type: env_var_name
+        default: KUBR_APIKEY
+      deployment:
+        type: string
+      url:
+        type: env_var_name
+        default: KUBR_URL
+      ssh-key:
+        type: env_var_name
+        default: JUMP_SSHKEY
+      user:
+        type: env_var_name
+        default: JUMP_USER
+      host:
+        type: env_var_name
+        default: JUMP_HOST
+    steps:
+      - run:
+          name: Trigger deployment in Kubr over jump host
+          command: |
+            eval $(ssh-agent -s)
+            ssh-add <(echo "$<< parameters.ssh-key >>" | base64 -d)
+            echo "curl -s -X POST \"$<< parameters.url >>/yeebase.kubr/webhook/deploy?apikey=$<< parameters.api-key >>&name=<< parameters.deployment >>\"" | ssh -o StrictHostKeyChecking=no -T $JUMP_USER@$JUMP_HOST
+jobs:
+  deploy:
+    description: Deploy using Kubr
+    executor: ssh-client
+    parameters:
+      api-key:
+        type: env_var_name
+        default: KUBR_APIKEY
+      deployment:
+        type: string
+      url:
+        type: env_var_name
+        default: KUBR_URL
+      ssh-key:
+        type: env_var_name
+        default: JUMP_SSHKEY
+      user:
+        type: env_var_name
+        default: JUMP_USER
+      host:
+        type: env_var_name
+        default: JUMP_HOST
+    steps:
+      - deploy:
+          api-key: << parameters.api-key >>
+          deployment: << parameters.deployment >>
+          url: << parameters.url >>
+          ssh-key: << parameters.ssh-key >>
+          user: << parameters.user >>
+          host: << parameters.host >>
