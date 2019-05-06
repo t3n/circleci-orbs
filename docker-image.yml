@@ -1,0 +1,178 @@
+version: 2.1
+
+description: |
+  Build and publish Docker images to container registries. Source:
+  https://github.com/t3n/circleci-orbs
+
+executors:
+  cloud-sdk:
+    description: The docker container to use when running docker-image commands
+    docker:
+      - image: google/cloud-sdk:alpine
+
+commands:
+  gcr-auth:
+    description: Authenticate against Google Container Registry
+    parameters:
+      gcloud-service-key:
+        description: The gcloud service key
+        type: env_var_name
+        default: GCLOUD_SERVICE_KEY
+      google-project-id:
+        description: Environment variable name for the Google project ID to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_PROJECT_ID
+      google-compute-zone:
+        description: The Google compute zone to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_COMPUTE_ZONE
+    steps:
+      - run:
+          name: Check Environment Variables
+          command: |
+            if [[ -z "${GCLOUD_SERVICE_KEY}" ]]; then
+              echo "GCLOUD_SERVICE_KEY is not set, will not be able to log into gcr."
+              exit 1
+            fi
+
+            if [[ -z "${GOOGLE_PROJECT_ID}" ]]; then
+              echo "GOOGLE_PROJECT_ID is not set, will not be able to log into gcr."
+              exit 1
+            fi
+
+            if [[ -z "${GOOGLE_COMPUTE_ZONE}" ]]; then
+              echo "GOOGLE_COMPUTE_ZONE is not set, will not be able to log into gcr."
+              exit 1
+            fi
+      - run:
+          name: Authenticate and configure Docker
+          command: |
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+            gcloud auth configure-docker --quiet
+  gcr-clean:
+    description: Delete all images without tag
+    parameters:
+      registry-url:
+        description: The GCR registry URL from ['', us, eu, asia].gcr.io
+        type: string
+        default: eu.gcr.io
+      google-project-id:
+        description: The Google project ID to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_PROJECT_ID
+      image:
+        description: A name for your docker image
+        type: string
+    steps:
+      - run:
+          name: Delete untagged Docker images
+          command: >
+            gcloud container images list-tags <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>> --filter='-tags:*' --format='get(digest)' |
+            awk -v google_project_id=$<<parameters.google-project-id>> '{print "<<parameters.registry-url>>/"google_project_id"/<<parameters.image>>@" $1}' |
+            xargs gcloud container images delete --force-delete-tags --quiet || exit 0
+  build-image:
+    description: Build a docker image
+    parameters:
+      registry-url:
+        description: The GCR registry URL from ['', us, eu, asia].gcr.io
+        type: string
+        default: eu.gcr.io
+      google-project-id:
+        description: The Google project ID to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_PROJECT_ID
+      image:
+        description: A name for your docker image
+        type: string
+      tag:
+        description: the tag name of the docker image
+        type: env_var_name
+        default: CIRCLE_BRANCH
+      path-to-dockerfile:
+        description: The relative path to the Dockerfile to use when building image
+        type: string
+        default: "."
+    steps:
+      - run:
+          name: Build docker image
+          command: |
+            docker build -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.path-to-dockerfile>>
+  push-image:
+    description: "Push a container image to the GCR registry"
+    parameters:
+      registry-url:
+        description: The GCR registry URL from ['', us, eu, asia].gcr.io
+        type: string
+        default: eu.gcr.io
+      google-project-id:
+        description: The Google project ID to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_PROJECT_ID
+      image:
+        description: A name for your docker image
+        type: string
+      tag:
+        description: the tag name of the docker image
+        type: env_var_name
+        default: CIRCLE_BRANCH
+    steps:
+      - run:
+          name: Push docker image to registry
+          command: |
+            if [[ "${<<parameters.tag>>}" == "master" && "<<parameters.registry-url>>" == *"gcr.io"* ]]; then
+              gcloud --quiet container images add-tag <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:prev || exit 0
+            fi
+            docker push <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>>
+  gcr-build-and-push:
+    description: >
+      Authenticate with Google Cloud Platform. Build and push image to repository.
+      Requires environment variable for GCLOUD_SERVICE_KEY.
+    parameters:
+      gcloud-service-key:
+        description: The gcloud service key
+        type: env_var_name
+        default: GCLOUD_SERVICE_KEY
+      google-project-id:
+        description: The Google project ID to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_PROJECT_ID
+      google-compute-zone:
+        description: The Google compute zone to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_COMPUTE_ZONE
+      registry-url:
+        description: The GCR registry URL from ['', us, eu, asia].gcr.io
+        type: string
+        default: eu.gcr.io
+      image:
+        description: A name for your docker image
+        type: string
+      tag:
+        description: the tag name of the docker image
+        type: env_var_name
+        default: CIRCLE_BRANCH
+      path-to-dockerfile:
+        description: The relative path to the Dockerfile to use when building image
+        type: string
+        default: "."
+    steps:
+      - gcr-auth:
+          google-project-id: <<parameters.google-project-id>>
+          google-compute-zone: <<parameters.google-compute-zone>>
+      - build-image:
+          registry-url: <<parameters.registry-url>>
+          google-project-id: <<parameters.google-project-id>>
+          image: <<parameters.image>>
+          tag: << parameters.tag >>
+          path-to-dockerfile: <<parameters.path-to-dockerfile>>
+      - push-image:
+          registry-url: <<parameters.registry-url>>
+          google-project-id: <<parameters.google-project-id>>
+          image: <<parameters.image>>
+          tag: <<parameters.tag>>
+      - gcr-clean:
+          registry-url: <<parameters.registry-url>>
+          google-project-id: <<parameters.google-project-id>>
+          image: <<parameters.image>>
