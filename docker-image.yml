@@ -71,7 +71,7 @@ commands:
           command: >
             gcloud container images list-tags <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>> --filter='-tags:*' --format='get(digest)' |
             awk -v google_project_id=$<<parameters.google-project-id>> '{print "<<parameters.registry-url>>/"google_project_id"/<<parameters.image>>@" $1}' |
-            xargs gcloud container images delete --force-delete-tags --quiet || exit 0
+            xargs gcloud container images delete --force-delete-tags --quiet || true
   build-image:
     description: Build a docker image
     parameters:
@@ -122,7 +122,7 @@ commands:
           name: Push docker image to registry
           command: |
             if [[ "${<<parameters.tag>>}" == "master" && "<<parameters.registry-url>>" == *"gcr.io"* ]]; then
-              gcloud --quiet container images add-tag <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:prev || exit 0
+              gcloud --quiet container images add-tag <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:prev || true
             fi
             docker push <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>>
   gcr-build-and-push:
