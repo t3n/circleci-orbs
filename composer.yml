@@ -21,7 +21,7 @@ jobs:
         type: string
         default: app
     steps:
-      - attach_workspace: 
+      - attach_workspace:
           at: << parameters.workspace-root >>
       - run: |
           cd << parameters.workspace-root >> 
@@ -29,5 +29,5 @@ jobs:
           composer install --no-dev
       - persist_to_workspace:
           root: << parameters.workspace-root >>
-          paths: 
+          paths:
             - << parameters.working-directory >>
