@@ -1,0 +1,33 @@
+version: 2.1
+
+description: |
+  Cleanup composer dev dependencies:
+  https://github.com/t3n/circleci-orbs
+
+executors:
+  ci-image:
+    description: The docker container to use when running composer commands
+    docker:
+      - image: quay.io/yeebase/ci-build:7.2
+jobs:
+  cleanup:
+    description: Cleanup composer dependencies
+    executor: ci-image
+    parameters:
+      workspace-root:
+        type: string
+        default: ~/workspace
+      working-directory:
+        type: string
+        default: app
+    steps:
+      - attach_workspace: 
+          at: << parameters.workspace-root >>
+      - run: |
+          cd << parameters.workspace-root >> 
+          cd << parameters.working-directory >> 
+          composer install --no-dev
+      - persist_to_workspace:
+          root: << parameters.workspace-root >>
+          paths: 
+            - << parameters.working-directory >>
