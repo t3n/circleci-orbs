@@ -1,7 +1,7 @@
 version: 2.1
 
 description: |
-  Cleanup composer dev dependencies:
+  Remove composer dev dependencies:
   https://github.com/t3n/circleci-orbs
 
 executors:
@@ -10,8 +10,8 @@ executors:
     docker:
       - image: quay.io/yeebase/ci-build:7.2
 jobs:
-  cleanup:
-    description: Cleanup composer dependencies
+  remove-dev:
+    description: Remove composer dev dependencies
     executor: ci-image
     parameters:
       workspace-root:
