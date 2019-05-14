@@ -26,7 +26,7 @@ jobs:
       - run: |
           cd << parameters.workspace-root >> 
           cd << parameters.working-directory >> 
-          composer install --no-dev
+          composer --ignore-platform-reqs install --no-dev
       - persist_to_workspace:
           root: << parameters.workspace-root >>
           paths:
