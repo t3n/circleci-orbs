@@ -1,0 +1,96 @@
+version: 2.1
+
+description: |
+  Upload to Google Cloud Storage
+
+executors:
+  cloud-sdk:
+    description: The docker container to use when running gcp-gcs commands
+    docker:
+      - image: google/cloud-sdk:alpine
+
+commands:
+  gcs-auth:
+    description: Authenticate against Google Cloud Storage
+    parameters:
+      gcloud-service-key:
+        description: The gcloud service key
+        type: env_var_name
+        default: GCLOUD_SERVICE_KEY
+      google-project-id:
+        description: Environment variable name for the Google project ID to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_PROJECT_ID
+    steps:
+      - run:
+          name: Check Environment Variables
+          command: |
+            if [[ -z "${GCLOUD_SERVICE_KEY}" ]]; then
+              echo "GCLOUD_SERVICE_KEY is not set, will not be able to log into gcs."
+              exit 1
+            fi
+
+            if [[ -z "${GOOGLE_PROJECT_ID}" ]]; then
+              echo "GOOGLE_PROJECT_ID is not set, will not be able to log into gcs."
+              exit 1
+            fi
+      - run:
+          name: Authenticate and configure Docker
+          command: |
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+  rsync:
+    description: Sync files to Bucket
+    parameters:
+      bucket:
+        description: The google bucket to upload to
+        type: string
+      source:
+        description: Source
+        type: string
+      destination:
+        description: Destination
+        type: string
+        default: ''
+      options:
+        description: Options
+        type: string
+        default: ''
+    steps:
+      - run:
+          name: Sync files to storage
+          command: |
+            gsutil -m rsync <<parameters.options>> <<parameters.source>> gs://<<parameters.bucket>>/<<parameters.destination>>
+  gcs-rsync:
+    description: Authenticate and sync files to Bucket
+    parameters:
+      gcloud-service-key:
+        description: The gcloud service key
+        type: env_var_name
+        default: GCLOUD_SERVICE_KEY
+      google-project-id:
+        description: Environment variable name for the Google project ID to connect with via the gcloud CLI
+        type: env_var_name
+        default: GOOGLE_PROJECT_ID
+      bucket:
+        description: The google bucket to upload to
+        type: string
+      source:
+        description: Source
+        type: string
+      destination:
+        description: Destination
+        type: string
+        default: ''
+      options:
+        description: Options
+        type: string
+        default: ''
+    steps:
+      - gcs-auth:
+          google-project-id: <<parameters.google-project-id>>
+      - rsync:
+          bucket: <<parameters.bucket>>
+          source: <<parameters.source>>
+          destination: <<parameters.destination>>
+          options: <<parameters.options>>
