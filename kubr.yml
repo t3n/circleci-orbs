@@ -8,7 +8,7 @@ executors:
   ssh-client:
     description: The docker container to use when running docker-image commands
     docker:
-      - image: quay.io/t3n/ssh-client
+      - image: t3nde/ssh-client
 commands:
   deploy:
     parameters:
