@@ -8,7 +8,7 @@ executors:
   ci-image:
     description: The docker container to use when running composer commands
     docker:
-      - image: quay.io/yeebase/ci-build:7.2
+      - image: t3nde/ci-build:7.3
 jobs:
   remove-dev:
     description: Remove composer dev dependencies
