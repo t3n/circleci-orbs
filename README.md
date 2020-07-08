@@ -21,6 +21,22 @@ This orb adds a new job to remove composer dev dependencies
 | workspace_root    | ~/workspace   | Defines the workspace root to operate the commadns in                                               |
 | working-directory | app           | The directory the composer commands will be executed in. This dir is relative to the workspace_root |
 
+## Publish
+
+Create a personal API token in [CircleCI](https://app.circleci.com/settings/user/tokens).
+Save it to `circleci-cli` config file:
+
+```bash
+$ mkdir ~/.circleci
+$ cat <<EOF >> ~/.circleci/cli.yml
+host: https://circleci.com
+endpoint: graphql-unstable
+token: <api-token>
+EOF
+```
+
+Snippets for publishing commands are at [t3n/pet-snippets](https://github.com/t3n/pet-snippets/blob/master/circleci.toml).
+
 ## Contributing
 
 PRs accepted.
