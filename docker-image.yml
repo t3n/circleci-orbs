@@ -98,7 +98,7 @@ commands:
       - run:
           name: Build docker image
           command: |
-            docker build -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.path-to-dockerfile>>
+            docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.path-to-dockerfile>>
   push-image:
     description: "Push a container image to the GCR registry"
     parameters:
@@ -151,7 +151,7 @@ commands:
       - run:
           name: Build docker image
           command: |
-            docker build -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:${<<parameters.tag>>/v/''} <<parameters.path-to-dockerfile>>
+            docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:${<<parameters.tag>>/v/''} <<parameters.path-to-dockerfile>>
   push-image-tag:
     description: "Push a container image to the GCR registry"
     parameters:
