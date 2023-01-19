@@ -7,7 +7,7 @@ executors:
   cloud-sdk:
     description: The docker container to use when running gcp-gcs commands
     docker:
-      - image: google/cloud-sdk:alpine
+      - image: google/cloud-sdk:413.0.0-alpine
 
 commands:
   gcs-auth:
