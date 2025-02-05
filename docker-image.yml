@@ -94,11 +94,19 @@ commands:
         description: The relative path to the Dockerfile to use when building image
         type: string
         default: "."
+      build-arg:
+        description: Build argument to pass to the docker build command
+        type: string
+        default: ""
     steps:
       - run:
           name: Build docker image
           command: |
-            docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.path-to-dockerfile>>
+            if [[ -n "<<parameters.build-arg>>" ]]; then
+              docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> --build-arg <<parameters.build-arg>> <<parameters.path-to-dockerfile>>
+            else
+              docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:$<<parameters.tag>> <<parameters.path-to-dockerfile>>
+            fi
   push-image:
     description: "Push a container image to the GCR registry"
     parameters:
@@ -147,11 +155,19 @@ commands:
         description: The relative path to the Dockerfile to use when building image
         type: string
         default: "."
+      build-arg:
+        description: Build argument to pass to the docker build command
+        type: string
+        default: ""
     steps:
       - run:
           name: Build docker image
           command: |
-            docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:${<<parameters.tag>>/v/''} <<parameters.path-to-dockerfile>>
+            if [[ -n "<<parameters.build-arg>>" ]]; then
+              docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:${<<parameters.tag>>/v/''} --build-arg <<parameters.build-arg>> <<parameters.path-to-dockerfile>>
+            else
+              docker build --no-cache -t <<parameters.registry-url>>/$<<parameters.google-project-id>>/<<parameters.image>>:${<<parameters.tag>>/v/''} <<parameters.path-to-dockerfile>>
+            fi
   push-image-tag:
     description: "Push a container image to the GCR registry"
     parameters:
@@ -207,6 +223,10 @@ commands:
         description: The relative path to the Dockerfile to use when building image
         type: string
         default: "."
+      build-arg:
+        description: Build arguments to pass to the docker build command
+        type: string
+        default: ""
     steps:
       - gcr-auth:
           google-project-id: <<parameters.google-project-id>>
@@ -217,6 +237,7 @@ commands:
           image: <<parameters.image>>
           tag: << parameters.tag >>
           path-to-dockerfile: <<parameters.path-to-dockerfile>>
+          build-arg: <<parameters.build-arg>>
       - push-image:
           registry-url: <<parameters.registry-url>>
           google-project-id: <<parameters.google-project-id>>
@@ -258,6 +279,10 @@ commands:
         description: The relative path to the Dockerfile to use when building image
         type: string
         default: "."
+      build-arg:
+        description: Build arguments to pass to the docker build command
+        type: string
+        default: ""
     steps:
       - gcr-auth:
           google-project-id: <<parameters.google-project-id>>
@@ -268,6 +293,7 @@ commands:
           image: <<parameters.image>>
           tag: << parameters.tag >>
           path-to-dockerfile: <<parameters.path-to-dockerfile>>
+          build-arg: <<parameters.build-arg>>
       - push-image-tag:
           registry-url: <<parameters.registry-url>>
           google-project-id: <<parameters.google-project-id>>
